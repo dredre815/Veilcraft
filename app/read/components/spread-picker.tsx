@@ -5,8 +5,23 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Check, Sparkles } from "lucide-react";
 
 import { spreadMap, spreads, type SpreadDefinition, type SpreadId } from "@/lib/spreads";
+import type { Suit } from "@/lib/deck";
 import { useReadingStore } from "../store/use-reading-store";
 import { cn } from "@/lib/utils";
+
+const SUIT_LABELS: Record<Suit, string> = {
+  wands: "权杖",
+  cups: "圣杯",
+  swords: "宝剑",
+  pentacles: "钱币",
+};
+
+const SUIT_PREVIEW_GRADIENTS: Record<Suit, string> = {
+  wands: "linear-gradient(135deg, rgba(244,133,75,0.85), rgba(240,71,44,0.82))",
+  cups: "linear-gradient(135deg, rgba(88,140,255,0.85), rgba(119,213,255,0.8))",
+  swords: "linear-gradient(135deg, rgba(114,126,170,0.82), rgba(58,72,113,0.82))",
+  pentacles: "linear-gradient(135deg, rgba(101,176,117,0.85), rgba(214,194,88,0.78))",
+};
 
 interface SpreadPickerProps {
   defaultSpreadId?: SpreadId;
@@ -101,6 +116,22 @@ export function SpreadPicker({ defaultSpreadId, onSelect }: SpreadPickerProps) {
                     <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
                       {position.description}
                     </p>
+                    {position.suitHint?.length ? (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {position.suitHint.map((suit) => (
+                          <span
+                            key={`${position.id}-${suit}`}
+                            className="rounded-full px-2 py-1 text-[10px] font-medium uppercase tracking-[0.24em] text-white/90 shadow-sm"
+                            style={{
+                              backgroundImage: SUIT_PREVIEW_GRADIENTS[suit],
+                              boxShadow: "0 6px 18px rgba(0,0,0,0.25)",
+                            }}
+                          >
+                            {SUIT_LABELS[suit]}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -192,16 +223,21 @@ function SpreadPreview({ spread, active }: SpreadPreviewProps) {
         const size =
           card.positionId === "challenge" ? spread.layout.cardSize + 4 : spread.layout.cardSize;
         const transform = `translate(-50%, -50%)${card.rotate ? ` rotate(${card.rotate}deg)` : ""}`;
+        const suitGradient = position?.suitHint?.[0]
+          ? SUIT_PREVIEW_GRADIENTS[position.suitHint[0]]
+          : "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04))";
         return (
           <motion.div
             key={card.positionId}
-            className="group/card border-border/70 absolute flex aspect-[3/5] items-center justify-center rounded-[18px] border bg-[color-mix(in_srgb,var(--surface)_92%,transparent)] shadow-inner"
+            className="group/card absolute flex aspect-[3/5] items-center justify-center rounded-[18px] border border-white/20 shadow-inner"
             style={{
               left: `${card.x}%`,
               top: `${card.y}%`,
               width: `${size}%`,
               transform,
               zIndex: card.zIndex ?? 0,
+              backgroundImage: suitGradient,
+              boxShadow: "0 12px 32px rgba(0,0,0,0.22)",
             }}
             whileHover={{ scale: 1.05, transition: { duration: 0.18, ease: [0.2, 0.9, 0.2, 1] } }}
           >

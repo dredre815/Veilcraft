@@ -6,13 +6,17 @@ import { AlertTriangle, Check, ChevronsRight, Loader2, RefreshCcw, Sparkles } fr
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ApiKeyDialogTrigger } from "@/components/settings/api-key-dialog";
 import { ReadingSchema, type CardRead, type Reading } from "@/lib/schema";
 import { spreadMap, type SpreadDefinition } from "@/lib/spreads";
 
 import { EvidenceTray } from "./evidence-tray";
 import { FeedbackWidget } from "./feedback-widget";
-import { ShareSheet } from "./share-sheet";
+import { InterpretationChat } from "./interpretation-chat";
+import { ReadingHistoryDialogTrigger } from "@/components/history/reading-history-dialog";
 import { useReadingStore } from "../store/use-reading-store";
+import { useOpenAiSettings } from "../store/use-openai-settings";
+import { useReadingArchive } from "../store/use-reading-archive";
 
 const PANEL_EASE = [0.2, 0.9, 0.2, 1] as const;
 
@@ -140,6 +144,11 @@ export function ReadingPanel() {
   const setInterpretationError = useReadingStore((state) => state.setInterpretationError);
   const resetInterpretation = useReadingStore((state) => state.resetInterpretation);
 
+  const openAiKey = useOpenAiSettings((state) => state.apiKey);
+  const apiKeyStatus = useOpenAiSettings((state) => state.apiKeyStatus);
+  const markApiKeyStatus = useOpenAiSettings((state) => state.markApiKeyStatus);
+  const saveReading = useReadingArchive((state) => state.saveReading);
+
   const spread = useMemo(() => spreadMap[spreadId], [spreadId]);
   const positionMap = useMemo(() => {
     if (!spread) return new Map<string, SpreadDefinition["positions"][number]>();
@@ -189,9 +198,10 @@ export function ReadingPanel() {
   const interpretReady = Boolean(
     question && seed && cards.length > 0 && phase === "complete" && spread,
   );
+  const hasApiKey = Boolean(openAiKey && openAiKey.trim().length > 0);
 
   const fetchInterpretation = useCallback(async () => {
-    if (!interpretReady || !question || !seed || cards.length === 0) {
+    if (!interpretReady || !question || !seed || cards.length === 0 || !openAiKey) {
       return;
     }
     try {
@@ -216,6 +226,7 @@ export function ReadingPanel() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-openai-key": openAiKey,
         },
         body: JSON.stringify(payload),
       });
@@ -223,12 +234,28 @@ export function ReadingPanel() {
       if (!response.ok) {
         const errorJson = await response.json().catch(() => null);
         const message = errorJson?.message ?? "解读生成失败，请稍后重试。";
+        if (response.status === 401) {
+          markApiKeyStatus("invalid");
+        }
         throw new Error(message);
       }
 
+      markApiKeyStatus("valid");
       const json = await response.json();
       const parsed = ReadingSchema.parse(json);
       setInterpretationSuccess(parsed);
+      saveReading({
+        seed,
+        spreadId,
+        question: {
+          question: question.question,
+          category: question.category,
+          tone: question.tone,
+          language: question.language,
+          email: question.email,
+        },
+        reading: parsed,
+      });
     } catch (error) {
       console.error("Failed to generate interpretation", error);
       const message = error instanceof Error ? error.message : "解读生成失败，请稍后重试。";
@@ -240,16 +267,19 @@ export function ReadingPanel() {
     seed,
     cards,
     spreadId,
+    openAiKey,
     setInterpretationPending,
     setInterpretationSuccess,
     setInterpretationError,
+    markApiKeyStatus,
+    saveReading,
   ]);
 
   useEffect(() => {
-    if (interpretReady && interpretStatus === "idle") {
+    if (interpretReady && hasApiKey && interpretStatus === "idle") {
       void fetchInterpretation();
     }
-  }, [interpretReady, interpretStatus, fetchInterpretation]);
+  }, [interpretReady, hasApiKey, interpretStatus, fetchInterpretation]);
 
   const handleRetry = useCallback(() => {
     void fetchInterpretation();
@@ -286,6 +316,16 @@ export function ReadingPanel() {
       <div className="mt-8 flex flex-col items-center gap-4 text-center text-muted-foreground">
         <Loader2 className="h-10 w-10 animate-spin text-primary" aria-hidden />
         <p className="text-sm">逐张翻开牌面后，Veilcraft 将生成结构化的 AI 解读。</p>
+      </div>
+    );
+  } else if (!hasApiKey) {
+    panelContent = (
+      <div className="border-border/60 mt-8 flex flex-col items-center gap-4 rounded-3xl border bg-[color-mix(in_srgb,var(--surface)_88%,transparent)] px-6 py-8 text-center text-muted-foreground">
+        <AlertTriangle className="h-10 w-10 text-primary" aria-hidden />
+        <p className="text-sm">
+          为保证隐私与自主控制，请先在右上角设置 OpenAI API Key，系统会代理请求并仅在本地存储密钥。
+        </p>
+        <ApiKeyDialogTrigger />
       </div>
     );
   } else if (interpretStatus === "loading") {
@@ -332,6 +372,9 @@ export function ReadingPanel() {
           <RefreshCcw className="mr-2 h-4 w-4" aria-hidden />
           重新请求解读
         </Button>
+        {apiKeyStatus === "invalid" ? (
+          <p className="text-xs text-danger">检测到密钥不可用，请在设置中更新后重试。</p>
+        ) : null}
       </div>
     );
   } else if (interpretStatus === "success" && reading && question && seed) {
@@ -386,20 +429,15 @@ export function ReadingPanel() {
         <p className="text-muted-foreground/80 text-xs leading-relaxed">{reading.disclaimer}</p>
         <div className="border-border/60 glass-panel flex flex-col gap-4 rounded-3xl border bg-[color-mix(in_srgb,var(--surface)_90%,transparent)] p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-fg">复盘与分享</p>
+            <p className="text-sm font-semibold text-fg">本地历史记录</p>
             <p className="text-xs text-muted-foreground">
-              生成包含 seed 的链接，随时重播本次抽牌与解读。
+              解读与追问会保存在浏览器中，随时回顾或导出 Seed。
             </p>
           </div>
-          <ShareSheet
-            question={question}
-            spreadId={spreadId}
-            seed={seed}
-            cards={cards}
-            reading={reading}
-          />
+          <ReadingHistoryDialogTrigger />
         </div>
         <FeedbackWidget />
+        <InterpretationChat />
       </div>
     );
   }

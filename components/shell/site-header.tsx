@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { ApiKeyDialogTrigger } from "@/components/settings/api-key-dialog";
 
 const navItems = [
   { href: "/read", label: "体验占卜" },
@@ -72,6 +73,7 @@ export function SiteHeader() {
             </Link>
           </Button>
           <ThemeToggle />
+          <ApiKeyDialogTrigger />
           <Button asChild size="sm" className="hidden md:inline-flex">
             <Link href="/read">
               立即揭幕

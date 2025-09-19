@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Star, Loader2, Send, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import { useReadingStore } from "../store/use-reading-store";
+import { useReadingArchive } from "../store/use-reading-archive";
 
 const FEEDBACK_TAGS = ["命中", "启发", "可执行", "过于玄学", "想要更多细节"] as const;
 const COMMENT_LIMIT = 400;
@@ -18,6 +19,11 @@ export function FeedbackWidget() {
   const seed = useReadingStore((state) => state.seed);
   const interpretStatus = useReadingStore((state) => state.interpretStatus);
   const reading = useReadingStore((state) => state.reading);
+
+  const saveFeedback = useReadingArchive((state) => state.saveFeedback);
+  const existingFeedback = useReadingArchive((state) =>
+    seed ? (state.entries.find((entry) => entry.seed === seed)?.feedback ?? null) : null,
+  );
 
   const [rating, setRating] = useState<number | null>(null);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
@@ -50,6 +56,20 @@ export function FeedbackWidget() {
   const isSubmitting = status === "submitting";
   const isSuccess = status === "success";
 
+  useEffect(() => {
+    if (!existingFeedback) {
+      setStatus("idle");
+      setRating(null);
+      setSelectedTags([]);
+      setComment("");
+      return;
+    }
+    setStatus("success");
+    setRating(existingFeedback.score);
+    setSelectedTags([...existingFeedback.tags]);
+    setComment(existingFeedback.comment ?? "");
+  }, [existingFeedback]);
+
   const handleToggleTag = useCallback((tag: string) => {
     setSelectedTags((previous) =>
       previous.includes(tag) ? previous.filter((item) => item !== tag) : [...previous, tag],
@@ -63,33 +83,19 @@ export function FeedbackWidget() {
     setStatus("submitting");
     setErrorMessage(null);
     try {
-      const response = await fetch("/api/feedback", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          readingId: seed,
-          score: rating,
-          tags: selectedTags,
-          comment: comment.trim() ? comment.trim() : undefined,
-        }),
+      saveFeedback(seed, {
+        score: rating,
+        tags: selectedTags,
+        comment: comment.trim() ? comment.trim() : undefined,
+        submittedAt: Date.now(),
       });
-
-      if (!response.ok) {
-        const errorJson = await response.json().catch(() => null);
-        const message = errorJson?.message ?? "提交反馈失败，请稍后重试。";
-        throw new Error(message);
-      }
-
       setStatus("success");
     } catch (error) {
-      console.error("Failed to submit feedback", error);
-      const message = error instanceof Error ? error.message : "提交反馈失败，请稍后重试。";
-      setErrorMessage(message);
+      console.error("Failed to persist feedback", error);
+      setErrorMessage("保存反馈时出现异常，请稍后重试。");
       setStatus("error");
     }
-  }, [comment, isSubmitting, rating, seed, selectedTags]);
+  }, [comment, isSubmitting, rating, saveFeedback, seed, selectedTags]);
 
   if (!canDisplay) {
     return null;

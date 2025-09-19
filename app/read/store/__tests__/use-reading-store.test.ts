@@ -115,28 +115,41 @@ describe("useReadingStore", () => {
       setInterpretationSuccess,
       setInterpretationError,
       resetInterpretation,
+      appendConversationTurn,
     } = useReadingStore.getState();
 
     setInterpretationPending();
     let state = useReadingStore.getState();
     expect(state.interpretStatus).toBe("loading");
     expect(state.reading).toBeNull();
+    expect(state.conversation).toEqual([]);
 
     setInterpretationSuccess(sampleReading);
     state = useReadingStore.getState();
     expect(state.interpretStatus).toBe("success");
     expect(state.reading).toEqual(sampleReading);
     expect(state.interpretError).toBeNull();
+    expect(state.conversation).toEqual([]);
+
+    appendConversationTurn({
+      role: "user",
+      content: "帮我深入看一下行动建议",
+      createdAt: Date.now(),
+    });
+    state = useReadingStore.getState();
+    expect(state.conversation).toHaveLength(1);
 
     setInterpretationError("Network error");
     state = useReadingStore.getState();
     expect(state.interpretStatus).toBe("error");
     expect(state.interpretError).toBe("Network error");
+    expect(state.conversation).toEqual([]);
 
     resetInterpretation();
     state = useReadingStore.getState();
     expect(state.interpretStatus).toBe("idle");
     expect(state.reading).toBeNull();
     expect(state.interpretError).toBeNull();
+    expect(state.conversation).toEqual([]);
   });
 });

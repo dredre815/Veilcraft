@@ -13,11 +13,11 @@
 
 ## 2. 设计与体验原则
 
-- **视觉风格**：深浅主题自适应、Aurora 渐变主色、玻璃质感卡片、统一圆角/阴影令牌。
+- **视觉风格**：深浅主题自适应、Aurora 渐变主色、玻璃质感卡片、统一圆角/阴影令牌；78 张牌各自拥有署名色板与 glyph，抽牌时可感知差异。
 - **交互基线**：动画时长与缓动遵循 240/180ms 与 `[.2,.9,.2,1]`；抽牌动画 ≤ 900ms；加载骨架与状态提示完整。
 - **信息架构**：
-  - 页面：Landing（/）、占卜流程（/read）、牌百科（/cards/[id]）和分享页（/share/[id]）。
-  - 组件：QuestionForm、SpreadPicker、DrawCanvas、ReadingPanel、EvidenceTray、ShareSheet、FeedbackWidget。
+  - 页面：Landing（/）、占卜流程（/read）、牌百科（/cards/[id]）。
+  - 组件：QuestionForm、SpreadPicker、DrawCanvas、ReadingPanel、EvidenceTray、HistoryPanel、FeedbackWidget。
 - **可访问性**：色彩对比遵循 WCAG AA；键盘可用的抽牌与导航；屏幕阅读描述关键状态。
 
 ## 3. 技术架构
@@ -27,8 +27,7 @@
 - **API 层**：
   - `/api/draw`：生成确定性抽牌结果。
   - `/api/interpret`：联通 LLM（暂以 mock/edge function 实现，可插拔真实供应商）。
-  - `/api/feedback`：记录评分与标签。
-  - `/api/share/[id]`：读取存储的阅读记录或基于 seed 重算。
+  - `/api/interpret/chat`：延续多轮追问对话。
 - **数据与持久化**：Prisma + SQLite（本地）/Postgres（生产）抽象；Redis/Upstash 用于缓存；Edge Storage（KV）用于分享记录。
 - **AI 管线**：
   1. 收集牌阵输入与卡意证据。
@@ -81,18 +80,19 @@
   - 自动建议聚焦问法（初期使用客户端规则，后续接入轻量模型）。
 - **SpreadPicker**：
   - 3D Hover 光晕效果；
-  - 预留更多牌阵扩展。
+  - 展示位置花色/元素提示，为后续自定义牌阵留出空间。
 - **DrawCanvas**：
   - 洗牌 → 扇形 → 翻牌的连续动画；
   - 键盘与触屏支持；
+  - 依据卡牌主题渲染渐层与 glyph，翻开后展示正逆位提示文案；
+  - 在非降低动画模式下，播放轻量粒子与正/逆位提示音，保持移动端帧率监控。
   - 抽牌完成后触发 `/api/interpret`。
 - **ReadingPanel & EvidenceTray**：
   - 流式渲染 `overview` → `theme` → 每张牌详细；
   - 证据抽屉展示引用文本与来源；
   - ActionList 与 Cautions 强调可执行与风险提示。
-- **Share & Feedback**：
-  - 生成分享链接（包含 seed、spreadId、lang、tone）；
-  - `api/og` 生成图卡（阶段性可占位）；
+- **Conversation & Feedback**：
+  - 用户可继续追问，维持多轮对话栈并保留上下文；
   - Feedback 组件写入评分与标签。
 
 ## 6. 工程流程
@@ -102,7 +102,7 @@
 3. **页面框架与导航**：完成 layout、Landing 雏形、读牌流程路由骨架。
 4. **占卜流程逻辑**：QuestionForm、SpreadPicker、状态管理、抽牌动画、与 `/api/draw` 交互。
 5. **AI 解读管线**：Schema 定义、LLM mock、Interpret API、ReadingPanel 流式显示。
-6. **分享与反馈**：ShareSheet、Feedback 组件与 API。
+6. **对话与反馈**：本地历史面板、追问对话与反馈组件。
 7. **质量保障**：单元测试（Vitest/React Testing Library）、端到端测试（Playwright）、类型检查、Lint、性能调优。
 8. **部署与监控**：配置 Vercel/Edge、Sentry、Analytics，准备环境变量与 CI。
 

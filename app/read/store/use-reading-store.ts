@@ -3,7 +3,7 @@
 import { create } from "zustand";
 
 import { type DrawResult, type DrawnCard } from "@/lib/draw";
-import { type Reading } from "@/lib/schema";
+import { type ConversationTurn, type Reading } from "@/lib/schema";
 import { spreads, type SpreadId } from "@/lib/spreads";
 
 export type DrawPhase = "idle" | "shuffling" | "revealing" | "complete";
@@ -29,6 +29,7 @@ interface ReadingStoreState {
   interpretStatus: "idle" | "loading" | "success" | "error";
   interpretError: string | null;
   lastInterpretAt: number | null;
+  conversation: readonly ConversationTurn[];
   setQuestion: (context: Omit<QuestionContext, "submittedAt"> & { submittedAt?: number }) => void;
   setSpread: (spreadId: SpreadId) => void;
   beginDraw: (result: DrawResult) => void;
@@ -40,6 +41,8 @@ interface ReadingStoreState {
   setInterpretationSuccess: (reading: Reading) => void;
   setInterpretationError: (message: string) => void;
   resetInterpretation: () => void;
+  appendConversationTurn: (turn: ConversationTurn) => void;
+  resetConversation: () => void;
 }
 
 const DEFAULT_SPREAD_ID: SpreadId = spreads[0]?.id ?? "three-card";
@@ -56,6 +59,7 @@ export const useReadingStore = create<ReadingStoreState>((set) => ({
   interpretStatus: "idle",
   interpretError: null,
   lastInterpretAt: null,
+  conversation: [],
   setQuestion: ({ submittedAt, ...context }) =>
     set(() => ({
       question: {
@@ -92,6 +96,7 @@ export const useReadingStore = create<ReadingStoreState>((set) => ({
       interpretStatus: "idle",
       interpretError: null,
       lastInterpretAt: null,
+      conversation: [],
     })),
   completeShuffle: () =>
     set((state) => ({
@@ -137,12 +142,14 @@ export const useReadingStore = create<ReadingStoreState>((set) => ({
       interpretStatus: "idle",
       interpretError: null,
       lastInterpretAt: null,
+      conversation: [],
     })),
   setInterpretationPending: () =>
     set(() => ({
       interpretStatus: "loading",
       interpretError: null,
       reading: null,
+      conversation: [],
     })),
   setInterpretationSuccess: (reading) =>
     set(() => ({
@@ -150,12 +157,14 @@ export const useReadingStore = create<ReadingStoreState>((set) => ({
       interpretStatus: "success",
       interpretError: null,
       lastInterpretAt: Date.now(),
+      conversation: [],
     })),
   setInterpretationError: (message) =>
     set(() => ({
       interpretStatus: "error",
       interpretError: message,
       lastInterpretAt: Date.now(),
+      conversation: [],
     })),
   resetInterpretation: () =>
     set(() => ({
@@ -163,5 +172,14 @@ export const useReadingStore = create<ReadingStoreState>((set) => ({
       interpretStatus: "idle",
       interpretError: null,
       lastInterpretAt: null,
+      conversation: [],
+    })),
+  appendConversationTurn: (turn) =>
+    set((state) => ({
+      conversation: [...state.conversation, turn],
+    })),
+  resetConversation: () =>
+    set(() => ({
+      conversation: [],
     })),
 }));

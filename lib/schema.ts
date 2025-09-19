@@ -58,6 +58,20 @@ export const InterpretRequestSchema = z.object({
 });
 export type InterpretRequest = z.infer<typeof InterpretRequestSchema>;
 
+export const ConversationTurnSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1),
+  createdAt: z.number().optional(),
+});
+export type ConversationTurn = z.infer<typeof ConversationTurnSchema>;
+
+export const InterpretFollowUpRequestSchema = InterpretRequestSchema.extend({
+  reading: ReadingSchema,
+  conversation: z.array(ConversationTurnSchema).min(1),
+  prompt: z.string().min(1).max(1000),
+});
+export type InterpretFollowUpRequest = z.infer<typeof InterpretFollowUpRequestSchema>;
+
 export const ShareRequestSchema = z
   .object({
     seed: z.string().min(1),

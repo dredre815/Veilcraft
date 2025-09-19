@@ -1,9 +1,12 @@
+import type { Suit } from "./deck";
+
 export interface SpreadPosition {
   id: string;
   index: number;
   title: string;
   subtitle?: string;
   description: string;
+  suitHint?: readonly Suit[];
 }
 
 export interface SpreadLayoutCard {
@@ -43,6 +46,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "过去",
         subtitle: "Past",
         description: "塑造当前局面的背景或前因，提醒你带入的惯性。",
+        suitHint: ["cups"],
       },
       {
         id: "present",
@@ -50,6 +54,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "现在",
         subtitle: "Present",
         description: "当前的核心矛盾与动力，正在影响你下一步的选择。",
+        suitHint: ["swords"],
       },
       {
         id: "future",
@@ -57,6 +62,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "未来",
         subtitle: "Future",
         description: "若顺着当前路径发展，在近期可以预见的趋势或结果。",
+        suitHint: ["wands", "pentacles"],
       },
     ],
     layout: {
@@ -82,6 +88,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "议题核心",
         subtitle: "Significator",
         description: "当前状况的核心主题或显化出的表层样貌。",
+        suitHint: ["wands", "swords"],
       },
       {
         id: "challenge",
@@ -89,6 +96,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "显性阻碍",
         subtitle: "Challenge",
         description: "直接阻挡进展的挑战，或你需要正面面对的问题。",
+        suitHint: ["swords"],
       },
       {
         id: "foundation",
@@ -96,6 +104,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "根基",
         subtitle: "Foundation",
         description: "推动事件演进的深层根因，往往与潜意识或结构性因素有关。",
+        suitHint: ["pentacles"],
       },
       {
         id: "recent-past",
@@ -103,6 +112,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "近期过去",
         subtitle: "Recent Past",
         description: "刚刚发生的事件，正在对局势产生余波。",
+        suitHint: ["cups"],
       },
       {
         id: "potential",
@@ -110,6 +120,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "潜力",
         subtitle: "Potential",
         description: "如果抓住当下的契机，可以达成的最佳潜在结果。",
+        suitHint: ["wands"],
       },
       {
         id: "near-future",
@@ -117,6 +128,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "短期未来",
         subtitle: "Near Future",
         description: "接下来 1-2 个月内的趋势或阶段性节点。",
+        suitHint: ["pentacles", "cups"],
       },
       {
         id: "self",
@@ -124,6 +136,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "自我立场",
         subtitle: "Self",
         description: "你在这件事中的姿态、优势或盲区。",
+        suitHint: ["wands"],
       },
       {
         id: "environment",
@@ -131,6 +144,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "外部环境",
         subtitle: "Environment",
         description: "他人或环境的影响与反馈，可能的支持或阻力。",
+        suitHint: ["swords"],
       },
       {
         id: "hopes-fears",
@@ -138,6 +152,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "期望 / 担忧",
         subtitle: "Hopes & Fears",
         description: "你或关键干系人抱持的希望与担忧，影响决策的心理面。",
+        suitHint: ["cups", "swords"],
       },
       {
         id: "outcome",
@@ -145,6 +160,7 @@ export const spreads: readonly SpreadDefinition[] = [
         title: "总体走向",
         subtitle: "Outcome",
         description: "在当前路径下的长期结果，以及需要提前准备的事项。",
+        suitHint: ["pentacles", "wands"],
       },
     ],
     layout: {

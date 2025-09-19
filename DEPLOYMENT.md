@@ -4,11 +4,7 @@ This guide documents the environment variables, quality gates, and command seque
 
 ## Environment Variables
 
-| Variable              | Required | Purpose                                                                                                     |
-| --------------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_APP_URL` | Optional | Absolute origin used when generating share links. Defaults to the request `origin` header during API calls. |
-
-Additional infrastructure (databases, KV stores, analytics) can be introduced in future phases; update this table when those integrations land.
+当前版本无需强制环境变量；所有解读历史与密钥均存储在用户浏览器中。后续若接入云端同步或日志服务，再补充此表。
 
 ## Pre-Deployment Checklist
 
@@ -33,8 +29,8 @@ Additional infrastructure (databases, KV stores, analytics) can be introduced in
 
 ## Post-Deployment Monitoring
 
-- Verify that `/api/share` responses include absolute OG image URLs using the configured `NEXT_PUBLIC_APP_URL`.
-- Ensure the `/api/interpret` mock continues to serve structured JSON (schema validation runs in production and will emit errors to logs if it fails).
-- Track user feedback submissions to confirm the mock `/api/feedback` endpoint remains reachable until the real storage layer is connected.
+- 确认 `/api/interpret` 与 `/api/interpret/chat` 仍返回符合 Schema 的 JSON，避免被代理或权限错误阻断。
+- 运行 `npm run test:e2e` 与 `npm run check:lighthouse` 观察主要页面体验是否达到基线。
+- 关注浏览器端日志（localStorage/IndexedDB）容量，评估是否需要后续导出与清理策略。
 
 Document any deviations or custom infrastructure requirements in this file so future iterations stay aligned with the deployment workflow.
