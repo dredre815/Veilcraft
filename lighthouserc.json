@@ -1,0 +1,33 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 1,
+      "url": ["http://127.0.0.1:3110/", "http://127.0.0.1:3110/read"],
+      "startServerCommand": "npm run start -- --hostname 127.0.0.1 --port 3110",
+      "startServerReadyPattern": "127.0.0.1:3110",
+      "startServerReadyTimeout": 180000,
+      "buildCommand": "npm run build",
+      "chromeFlags": ["--no-sandbox", "--disable-dev-shm-usage"],
+      "settings": {
+        "preset": "desktop",
+        "throttling": {
+          "rttMs": 40,
+          "throughputKbps": 10000,
+          "cpuSlowdownMultiplier": 2
+        }
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["warn", { "minScore": 0.5 }],
+        "categories:accessibility": ["error", { "minScore": 0.9 }],
+        "categories:best-practices": ["warn", { "minScore": 0.7 }],
+        "categories:seo": ["warn", { "minScore": 0.7 }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "./.lighthouse"
+    }
+  }
+}
